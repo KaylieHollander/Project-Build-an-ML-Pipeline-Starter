@@ -6,8 +6,6 @@ import os
 import wandb
 import hydra
 from omegaconf import DictConfig
-from src.basic_cleaning.run import go as basic_cleaning_go
-from src.data_check.run import go as data_check_go
 import yaml
 from types import SimpleNamespace
 
@@ -55,12 +53,16 @@ def go(config: DictConfig):
             )
 
         if "basic_cleaning" in active_steps:
-            basic_cleaning_go(
-                input_artifact = config['basic_cleaning']['input_artifact'],
-                output_artifact = config['basic_cleaning']['output_artifact'],
-                output_type = config['basic_cleaning']['output_type'],
-                min_price = config['basic_cleaning']['min_price'],
-                max_price = config['basic_cleaning']['max_price']
+             _ = mlflow.run(
+               os.path.join(hydra.utils.get_original_cwd(), "src", "data_check"),
+               "main",
+               parameters={
+                   "input_artifact": config['basic_cleaning']['input_artifact'],
+                   "output_artifact": config['basic_cleaning']['output_artifact'],
+                   "output_type": config['basic_cleaning']['output_type'],
+                   "min_price": config["basic_cleaning"]["min_price"],
+                   "max_price": config["basic_cleaning"]["max_price"]
+                },
             )
 
         
