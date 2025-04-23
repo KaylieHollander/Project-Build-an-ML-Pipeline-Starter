@@ -6,7 +6,7 @@ main:
   experiment_name: development
   steps: all
 basic_cleaning:
-  input_artifact: "kphollander-western-governors-university/nyc_airbnb/sample.csv"
+  input_artifact: "kphollander-western-governors-university/nyc_airbnb/sample.csv:v1"
   output_artifact: "clean_sample.csv"
   output_type: "csv"
   output_description: "This artifact contains the cleaned dataset"
