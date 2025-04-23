@@ -6,6 +6,11 @@ import os
 import wandb
 import hydra
 from omegaconf import DictConfig
+from src.basic_cleaning.run import go as basic_cleaning_go
+from src.data_check.run import go as data_check_go
+import yaml
+from types import SimpleNamespace
+
 
 _steps = [
     "download",
@@ -18,7 +23,6 @@ _steps = [
     # then you need to run this step explicitly
 #    "test_regression_model"
 ]
-
 
 # This automatically reads in the configuration
 @hydra.main(config_name='config')
@@ -51,22 +55,41 @@ def go(config: DictConfig):
             )
 
         if "basic_cleaning" in active_steps:
-            ##################
-            # Implement here #
-            ##################
-            pass
+            basic_cleaning_go(
+                input_artifact = config['basic_cleaning']['input_artifact'],
+                output_artifact = config['basic_cleaning']['output_artifact'],
+                output_type = config['basic_cleaning']['output_type'],
+                min_price = config['basic_cleaning']['min_price'],
+                max_price = config['basic_cleaning']['max_price']
+            )
 
-        if "data_check" in active_steps:
-            ##################
-            # Implement here #
-            ##################
-            pass
+        
+
+        if "data_check" in active_steps: 
+           _ = mlflow.run(
+               os.path.join(hydra.utils.get_original_cwd(), "src", "data_check"),
+               "main",
+               parameters={
+                   "csv": "kphollander-western-governors-university/nyc_airbnb/clean_sample:latest",
+                   "ref": "kphollander-western-governors-university/nyc_airbnb/clean_sample:reference",
+                   "kl_threshold": config["data_check"]["kl_threshold"],
+                   "min_price": config["data_check"]["min_price"],
+                   "max_price": config["data_check"]["max_price"]
+                },
+            )
 
         if "data_split" in active_steps:
-            ##################
-            # Implement here #
-            ##################
-            pass
+            _ = mlflow.run(
+               f"{config['main']['components_repository']}/train_val_test_split",
+                'main',
+                parameters = {
+                   "input": "kphollander-western-governors-university/nyc_airbnb/clean_sample:v0",
+                   "test_size": config['modeling']['test_size'],
+                   "random_seed": config["modeling"]["random_seed"],
+                   "stratify_by": config["modeling"]["stratify_by"]
+                },
+            )
+
 
         if "train_random_forest" in active_steps:
 
@@ -77,20 +100,31 @@ def go(config: DictConfig):
 
             # NOTE: use the rf_config we just created as the rf_config parameter for the train_random_forest
             # step
+            _ = mlflow.run(
+               os.path.join(hydra.utils.get_original_cwd(), "src", "train_random_forest"),
+               "main",
+               parameters={
+                   "trainval_artifact": "kphollander-western-governors-university/nyc_airbnb/clean_sample:latest",
+                   "val_size": config['modeling']['val_size'],
+                   "random_seed": config["modeling"]["random_seed"],
+                   "stratify_by": config["modeling"]["stratify_by"],
+                   "rf_config": rf_config,
+                   "max_tfidf_features": config["modeling"]["max_tfidf_features"],
+                   "output_artifact": "random_forest_export"
+                },
+            )
 
-            ##################
-            # Implement here #
-            ##################
-
-            pass
 
         if "test_regression_model" in active_steps:
-
-            ##################
-            # Implement here #
-            ##################
-
-            pass
+            _ = mlflow.run(
+                f"{config['main']['components_repository']}/test_regression_model",
+                "main",
+                parameters={
+                    "mlflow_model": "kphollander-western-governors-university/nyc_airbnb/random_forest_export:prod",
+                    "test_dataset": "kphollander-western-governors-university/nyc_airbnb/test_data.csv:latest"
+                },
+            )
+            
 
 
 if __name__ == "__main__":
