@@ -9,6 +9,9 @@ In this project you will build such a pipeline.
 ## Link to my Weights and Biases project
 - https://wandb.ai/kphollander-western-governors-university/nyc_airbnb/overview
 
+## Link to my Github Repository
+- https://github.com/KaylieHollander/Project-Build-an-ML-Pipeline-Starter.git
+
 ## Table of contents
 
 - [Preliminary steps](#preliminary-steps)
